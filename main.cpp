@@ -64,3 +64,127 @@ class Dataset{
 
         
 };
+
+
+class Weights{
+    private:
+        int MAX_WEIGHTS;
+
+    public:
+        float * values;
+        int number_weights;
+
+        Weights(){};
+        Weights(int number_predictor){
+            number_weights = number_predictor;
+            values = (float *) std::calloc(number_weights,sizeof(float));
+
+        };
+
+        void update(float **X, float *y, float *y_pred, float learning_rate, int length){
+            float multiplier = learning_rate/length;
+            for(int i =0;  i < number_weights; i++){
+                float sum = (sum_residual(X, y, y_pred, i, length));
+                printf("Sum = %f\n", sum);
+                values[i] = values[i] - multiplier * sum;
+            }
+        }
+
+        float sum_residual(float **X, float *y, float *y_pred, int current_predictor,  int length){
+            float total = 0;
+            float residual;
+
+            for(int i = 0 ; i < length; i++){
+                residual = (y_pred[i] - y[i]);
+                total = total + residual*X[i][current_predictor];
+            }
+            return total;
+        }
+        void print_weights(){
+            char function_string[1000];
+            printf("Number weights = %d\n", number_weights);
+            strcpy(function_string, "y = ");
+
+            for(int i = 0; i < number_weights; i++){
+                printf("Weights %d is = %f\n",i, values[i]);
+
+                char weight[20];
+                sprintf(weight,"%.2f * x%d", values[i],i);
+                strcat(function_string, weight);
+
+                if(i == number_weights-1){
+                    strcat(function_string,"\n");
+                }else{
+                    strcat(function_string," + ");
+                }
+            }
+            printf("%s\n",function_string);
+        }
+};
+
+class LinearRegressionModel{
+    float **X;
+    float *y;
+    int length;
+
+    public:
+        Weights *weights;
+        LinearRegressionModel(float **X_in,float *y_in, int length_in, int number_predictor){
+            X = X_in;
+            y = y_in;
+            length = length_in;
+            weights = new Weights(number_predictor);
+        }
+
+        void train(int max_iteration, float learning_rate){
+            float *y_pred = (float *) std::calloc(length, sizeof(float));
+            while(max_iteration > 0){
+                for(int i = 0; i<length; i++){
+                    y_pred[i] = predict(X[i]);
+
+                }
+
+                weights.update(X, y, y_pred, learning_rate, length);
+                
+                float mse = mean_squared_error(y, y_pred, length);
+
+                if (max_iteration%100 == 0){
+                    weights.print_weights();
+                    std::cout<<"Iteration left: "<<max_iteration<<"; MSE = "<<mse<<"\n"; 
+
+                }
+                max_iteration--;
+            }
+            free(y_pred);
+        }
+
+        float predict(float *x){
+            float prediction = 0;
+            for(int i = 0; i <weights.number_weights; i++){
+                prediction += weights.values[i] * x[i];
+            }
+            return prediction;
+        }
+};
+
+int main(){
+    int length_train;
+    std::cout << "Reading CSV file" << FILENAME << "\n";
+
+    Dataset data = Dataset(FILENAME);
+
+    std::cout << "Making LinearRegressionModel \n";
+    LinearRegressionModel linear_reg = LinearRegressionModel(data.X, data.y, data.length, data.number_predictor);    
+    std::cout << "Training \n";
+    linear_reg.train(MAX_ITERATION, LEARNING_RATE);
+
+        std::cout << "Testing \n";
+    float X_test[2];
+    X_test[0] = 1; 
+    X_test[1] = 123;
+    float y_test = linear_reg.predict(X_test);
+    linear_reg.weights.print_weights();
+    std::cout << "Testing for X0 = " << X_test[0] << ", X1 = " << X_test[1] << "\n";
+    std::cout << "y = " << y_test << "\n"; 
+    return 0;
+}

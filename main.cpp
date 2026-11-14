@@ -38,6 +38,29 @@ class Dataset{
         for(int i = 0; i < length; i++){
             X[i] = (float *) malloc(sizeof(float) * number_predictor);
         }
+        y=(float *) malloc(sizeof(float) * length);
+
+        char comma;
+        std::ifstream samefile(filename);
+        int current_index = 0;
+        while(std::getline(samefile, line)){
+            std::stringstream ss(line);
+            int current_predictor = 0;
+            float number;
+            while(line_stream >> number){
+                if(current_predictor == number_predictor){
+                    y[current_index] = number;
+                }else{
+                    X[current_index][current_predictor] = nummber;
+                }
+
+                if(line_stream.peek() == ','){
+                    line_stream.ignore();
+                }
+            }
+            current_index++;
+        }
+        samefile.close();     
 
         
 };
